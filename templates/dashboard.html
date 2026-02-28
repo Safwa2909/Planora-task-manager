@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="dashboard-container">
+
+    <!-- HEADER -->
+    <div class="dashboard-header">
+        <h1>My Tasks</h1>
+
+        <button onclick="openModal()" class="add-task-btn">
+            + Add Task
+        </button>
+    </div>
+
+
+    <!-- TASK LIST -->
+    <div class="task-grid">
+
+        {% if tasks %}
+            {% for task in tasks %}
+
+            <div class="task-card">
+
+                <h3>{{ task.title }}</h3>
+                <p>{{ task.description }}</p>
+
+                <div class="task-meta">
+                    <span class="priority {{ task.priority|lower }}">
+                        {{ task.priority }}
+                    </span>
+
+                    <span class="status-label">
+                        {{ task.status }}
+                    </span>
+                    {% if task.due_date %}
+
+                    {% set due = task.due_date.split('-') %}
+                    {% set due_obj = namespace(date=None) %}
+                    {% set due_obj.date = today.replace(
+                        year=due[0]|int,
+                        month=due[1]|int,
+                        day=due[2]|int
+                    ) %}
+
+                    {% set diff = (due_obj.date - today).days %}
+
+                    <span class="due-date
+                        {% if diff < 0 %} overdue
+                        {% elif diff == 0 %} today
+                        {% else %} upcoming
+                        {% endif %}
+                    ">
+
+                    {% if diff < 0 %}
+                    ⚠ Overdue by {{ diff|abs }} day(s)
+
+                    {% elif diff == 0 %}
+                    🔥 Due Today
+
+                    {% else %}
+                    ⏳ Due in {{ diff }} day(s)
+                    {% endif %}
+
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+            <div class="status-actions">
+
+                <a href="{{ url_for('update_status',
+                    task_id=task.id,
+                    new_status='todo') }}"
+                    class="status-btn todo-btn">
+                    To-Do
+                </a>
+
+                <a href="{{ url_for('update_status',
+                    task_id=task.id,
+                    new_status='progress') }}"
+                    class="status-btn progress-btn">
+                    Progress
+                </a>
+
+                <a href="{{ url_for('update_status',
+                    task_id=task.id,
+                    new_status='done') }}"
+                    class="status-btn done-btn">
+                    Done
+                </a>
+
+                <a href="{{ url_for('delete_task', task_id=task['id']) }}"
+                    class="delete-btn"
+                    onclick="return confirm('Delete this task?')">
+                    Delete
+                </a>
+
+            </div>
+
+    </div>
+
+            {% endfor %}
+        {% else %}
+
+        <div class="empty-state">
+            🚀 No tasks yet.<br>
+            Click <b>+ Add Task</b> to begin.
+        </div>
+
+        {% endif %}
+
+    </div>
+</div>
+
+
+<!-- ================= MODAL ================= -->
+
+<div id="taskModal" class="modal">
+
+    <div class="modal-content">
+
+        <h2>Add New Task</h2>
+
+        <form method="POST" action="{{ url_for('add_task') }}">
+
+            <input
+                type="text"
+                name="title"
+                placeholder="Task title"
+                required
+            >
+
+            <textarea
+                name="description"
+                placeholder="Task description"
+                required>
+            </textarea>
+
+            <select name="status">
+                <option value="todo">To-Do</option>
+                <option value="progress">Progress</option>
+                <option value="done">Done</option>
+            </select>
+
+            <select name="priority" required>
+                <option value="Low">Low Priority</option>
+                <option value="Medium">Medium Priority</option>
+                <option value="High">High Priority</option>
+            </select>
+
+            <label>Due Date</label>
+
+            <input type="date"
+                   name="due_date"
+                   required>
+
+            <div class="modal-buttons">
+                <button type="submit" class="save-btn">
+                    Save Task
+                </button>
+
+                <button type="button"
+                        onclick="closeModal()"
+                        class="cancel-btn">
+                    Cancel
+                </button>
+            </div>
+
+        </form>
+
+    </div>
+</div>
+
+
+<!-- ================= SCRIPT ================= -->
+
+<script>
+
+function openModal() {
+    document.getElementById("taskModal").style.display = "flex";
+}
+
+function closeModal() {
+    document.getElementById("taskModal").style.display = "none";
+}
+
+window.onclick = function(event) {
+    let modal = document.getElementById("taskModal");
+    if (event.target === modal) {
+        modal.style.display = "none";
+    }
+}
+
+</script>
+
+{% endblock %}
